@@ -1,0 +1,105 @@
+
+37
+down vote
+accepted
+I think you don't need to do fftshift(), and you can pass sampling period to fftfreq():
+
+import scipy
+import scipy.fftpack
+import pylab
+from scipy import pi
+t = scipy.linspace(0,120,4000)
+acc = lambda t: 10*scipy.sin(2*pi*2.0*t) + 5*scipy.sin(2*pi*8.0*t) + 2*scipy.random.random(len(t))
+
+signal = acc(t)
+
+FFT = abs(scipy.fft(signal))
+freqs = scipy.fftpack.fftfreq(signal.size, t[1]-t[0])
+
+pylab.subplot(211)
+pylab.plot(t, signal)
+pylab.subplot(212)
+pylab.plot(freqs,20*scipy.log10(FFT),'x')
+pylab.show()
+from the graph you can see there are two peak at 2Hz and 8Hz.
+
+enter image description here
+
+share|improve this answer
+answered Feb 27 '12 at 0:50
+
+HYRY
+28.8k22946
+1	 
+Thank you for such a complete answer. hyry, why did u choose to plot 20*scipy.log10(FFT) instead of FFT? –  Archie1986 Dec 24 '13 at 0:38
+  	 
+HYRY provided you a plot with the Y axis in the dB scale, and 20log10 provides the correct conversion for a magnitude spectrum. –  IntrepidBrit May 15 at 16:06
+add a comment
+
+up vote
+10
+down vote
+scipy.fftpack.fftfreq(n, d) gives you the frequencies directly. If you set d=1/33.34, this will tell you the frequency in Hz for each point of the fft.
+
+share|improve this answer
+answered Feb 27 '12 at 4:41
+
+tom10
+22k33054
+add a comment
+up vote
+5
+down vote
+The frequency width of each bin is (sampling_freq / num_bins).
+
+A more fundamental problem is that your sample rate is not sufficient for your signals of interest. Your sample rate is 8.3 Hz; you need at least 16Hz in order to capture an 8Hz input tone.1
+
+1. To all the DSP experts; I'm aware that it's actually BW that's relevant, not max frequency. But I'm assuming the OP doesn't want to do undersampled data acquisition.
+
+share|improve this answer
+edited Feb 26 '12 at 20:03
+
+answered Feb 26 '12 at 18:53
+
+Oliver Charlesworth
+155k11275440
+  	 	
+I'm using 4000 samples for 120 seconds -- isn't that 33.3 Hz? That should be more than enough for it, and the numbers are still off... –  nathan lachenmyer Feb 26 '12 at 19:53
+  	 	
+@asymptoticdesign: Ah, ok. Your question initially said 1000. Yes, that should be sufficient. Which bin index is the energy appearing in? –  Oliver Charlesworth Feb 26 '12 at 19:59
+add a comment
+up vote
+-2
+down vote
+Your equation is messed up.
+
+fs = 33.33
+df1 = 2*pi * (2.0/fs)
+df2 = 2*pi * (5.0/fs)
+x = [10*sin(n*df1) + 5*sin(n*df2) + 2*random.random() for n in range(4000)]
+This gives you 4000 samples of your function, sampled at 33.33 Hz, representing 120 seconds of data.
+
+Now take your FFT. Bin 0 will hold the DC result. Bin 1 will be 33.33, bin 2 will be 66.66, etc..
+
+Edit: I forget to mention that, since your sampling rate is 33.33 Hz, the maximum frequency that can be represented will be fs/2, or 16.665 Hz.
+
+share|improve this answer
+answered Feb 26 '12 at 19:53
+
+sizzzzlerz
+2,0681917
+2	 	
+-1: No. The total bandwidth is 33.33Hz, not the width of each bin. –  Oliver Charlesworth Feb 26 '12 at 19:59
+add a comment
+Your Answer
+
+ 
+Sign up or log in
+
+Sign up using Google
+Sign up using Facebook
+Sign up using Stack Exchange
+Post as a guest
+
+Name
+
